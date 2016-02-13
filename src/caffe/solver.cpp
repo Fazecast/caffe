@@ -332,6 +332,7 @@ void Solver<Dtype>::Test(const int test_net_id) {
   CHECK_NOTNULL(test_nets_[test_net_id].get())->
       ShareTrainedLayersWith(net_.get());
   vector<Dtype> test_score;
+  vector<int>   test_score_count;
   vector<int> test_score_output_id;
   const shared_ptr<Net<Dtype> >& test_net = test_nets_[test_net_id];
   Dtype loss = 0;
@@ -361,7 +362,14 @@ void Solver<Dtype>::Test(const int test_net_id) {
       for (int j = 0; j < result.size(); ++j) {
         const Dtype* result_vec = result[j]->cpu_data();
         for (int k = 0; k < result[j]->count(); ++k) {
-          test_score.push_back(result_vec[k]);
+          if (isnan(result_vec[k])) {
+            test_score.push_back(0);
+            test_score_count.push_back(0);
+          }
+          else {
+            test_score.push_back(result_vec[k]);
+            test_score_count.push_back(1);
+          }
           test_score_output_id.push_back(j);
         }
       }
@@ -370,7 +378,11 @@ void Solver<Dtype>::Test(const int test_net_id) {
       for (int j = 0; j < result.size(); ++j) {
         const Dtype* result_vec = result[j]->cpu_data();
         for (int k = 0; k < result[j]->count(); ++k) {
-          test_score[idx++] += result_vec[k];
+          if (!isnan(result_vec[k])) {
+            test_score[idx] += result_vec[k]; 
+            test_score_count[idx]++;
+          }
+          idx++;
         }
       }
     }
@@ -389,7 +401,7 @@ void Solver<Dtype>::Test(const int test_net_id) {
     const string& output_name = test_net->blob_names()[output_blob_index];
     const Dtype loss_weight = test_net->blob_loss_weights()[output_blob_index];
     ostringstream loss_msg_stream;
-    const Dtype mean_score = test_score[i] / param_.test_iter(test_net_id);
+    const Dtype mean_score = test_score[i] / test_score_count[i];
     if (loss_weight) {
       loss_msg_stream << " (* " << loss_weight
                       << " = " << loss_weight * mean_score << " loss)";
