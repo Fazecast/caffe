@@ -26,7 +26,6 @@
 #define PyArray_SetBaseObject(arr, x) (PyArray_BASE(arr) = (x))
 #endif
 
-/* Fix to avoid registration warnings in pycaffe (#3960) */
 #define BP_REGISTER_SHARED_PTR_TO_PYTHON(PTR) do { \
   const boost::python::type_info info = \
     boost::python::type_id<shared_ptr<PTR > >(); \
